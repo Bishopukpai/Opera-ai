@@ -1,4 +1,3 @@
-// components/SignupForm.tsx
 "use client";
 
 import { useState, FormEvent, ChangeEvent } from 'react';
@@ -90,23 +89,28 @@ export default function SignupForm() {
     setCurrentStep((prev) => prev - 1);
   };
 
-  // 3. Final Form Submission Handle
+  // 3. Final Form Submission Handle with Verification Logging
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
     if (!validateStep(2)) return;
     
     setError('');
     setSubmitting(true);
+    console.log("LOG: Multi-tenant signup sequence initialized.");
 
     try {
       // 1. Register User inside Firebase Authentication
+      console.log("LOG: Requesting Firebase Auth user creation...");
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+      console.log("LOG: Firebase Auth registration success. User UID:", user.uid);
 
-      // 2. Initialize the Business Document (with new relevant data fields)
+      // 2. Initialize the Business Document Reference
       const newBusinessRef = doc(collection(db, 'businesses'));
       const businessId = newBusinessRef.id;
+      console.log("LOG: Generated Tenant Business ID reference:", businessId);
       
+      console.log("LOG: Pushing write stream to /businesses collection...");
       await setDoc(newBusinessRef, {
         name: businessName,
         slug: businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
@@ -114,21 +118,31 @@ export default function SignupForm() {
         companySize,
         createdAt: new Date(),
       });
+      console.log("LOG: /businesses write verified successfully.");
 
       // 3. Create User Document mapped directly to this new business tenant
+      console.log("LOG: Pushing write stream to /users collection...");
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
         activeBusinessId: businessId,
         businesses: [businessId],
         createdAt: new Date(),
       });
+      console.log("LOG: /users identity reference mapping complete.");
 
+      // 4. Fire router navigation to client environment layout
+      console.log("LOG: Executing dashboard route redirect handshake...");
+      router.refresh();
       router.push('/dashboard');
     } catch (err: any) {
+      console.error("CRITICAL BACKEND OPERATION FAULT:", err);
+      
       if (err.code === 'auth/email-already-in-use') {
         setError('This email cluster identifier is already allocated.');
+      } else if (err.code === 'permission-denied') {
+        setError('Database deployment constraint violation. Your Security Rules rejected the initialization write.');
       } else {
-        setError(err.message || 'An error occurred during multi-tenant deployment.');
+        setError(err.message || 'An error occurred during multi-tenant deployment processing.');
       }
     } finally {
       setSubmitting(false);

@@ -1,7 +1,7 @@
 // lib/firebase.ts
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
-import { getFirestore, Firestore } from "firebase/firestore";
+import { getFirestore, Firestore } from "firebase/firestore"; // Reverted back to getFirestore
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -16,4 +16,6 @@ const firebaseConfig = {
 const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 export const auth: Auth = getAuth(app);
-export const db: Firestore = getFirestore(app);
+
+// Pass your custom database ID ('default') as the second parameter directly
+export const db: Firestore = getFirestore(app, 'default');
