@@ -1,31 +1,35 @@
+// api/agent-runtime/server.js
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const { processAgentCycle } = require('./agent-brain');
 
 const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json());
 
-// Cloud Run relies on the PORT environment variable to route container traffic
 const PORT = process.env.PORT || 8080;
 
-// Base Health check operational endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'HEALTHY', timestamp: new Date() });
+  res.status(200).json({ status: 'HEALTHY', service: 'agent-runtime', timestamp: new Date() });
 });
 
 // Primary Execution Gateway Endpoint for the AI Orchestrator
 app.post('/api/v1/execute-agent', async (req, res) => {
   const { businessId, prompt, context } = req.body;
   
+  if (!businessId || !prompt) {
+    return res.status(400).json({ error: "Missing required properties: businessId and prompt." });
+  }
+  
   try {
-    // Pipeline implementation logic will go here
-    console.log(`Processing action stack for cluster: ${businessId}`);
+    // Pass execution payload through the Gemini reasoning loop
+    const decisionPlan = await processAgentCycle(businessId, prompt, context);
     
     res.status(200).json({
       success: true,
       message: "Agent operational cycle completed.",
-      output: `Executed decision matrix context response for query: "${prompt}"`
+      output: decisionPlan
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

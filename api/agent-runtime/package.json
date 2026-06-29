@@ -11,9 +11,13 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "@google/genai": "^2.10.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "firebase-admin": "^14.0.0"
+    "firebase-admin": "^14.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }

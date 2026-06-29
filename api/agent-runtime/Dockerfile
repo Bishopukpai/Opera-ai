@@ -3,11 +3,11 @@ FROM node:18-alpine
 WORKDIR /usr/src/app
 
 COPY package*.json ./
-RUN npm ci --only=production
+# Force a clean dependency tree build matching our latest package updates
+RUN npm install --omit=dev
 
 COPY . .
 
-# Cloud Run defaults to 8080, matching our internal configuration runner
 EXPOSE 8080
 
 CMD [ "npm", "start" ]
